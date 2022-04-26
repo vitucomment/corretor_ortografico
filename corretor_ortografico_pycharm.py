@@ -4,7 +4,7 @@ Foi usado 'pip install nltk' para fazer a instalação da biblioteca NLTK no ter
 O import foi realizado no código: 'import nltk'
 '''
 
-
+#____________________________CARREGANDO ARQUIVOS____________________________
 with open("dados/artigos.txt", "r", encoding="utf8") as f:
     artigos = f.read()
 '''
@@ -17,6 +17,7 @@ ficando da seguinte forma: COM A FUNÇÃO OPEN NO ARQUIVO X NO MODO DE LEITURA C
 usando a função '.read()' 
 '''
 
+#____________________________TRATAMENTO DO CORPUS TEXTUAL____________________________
 
 def separa_palavras(corpus_textual):
     lista_tokens = nltk.tokenize.word_tokenize(artigos)
@@ -39,7 +40,27 @@ No 'return' da função, é feito com o método 'set()', para retornar elementos
 
 Para tratar uma corpusTextual, só precisamos inicializa-lo em uma variável e passar como parametro da função 'separa_palavra'
 '''
+lista_palavras = separa_palavras(artigos)
 
+
+def gerador_palavras(palavra):
+    fatias = []
+    for index in range(len(palavra)+1):
+        fatias.append((palavra[:index], palavra[index:]))
+    palavras_geradas = insere_letras(fatias)
+    palavras_geradas += deletando_caracteres(fatias)
+    palavras_geradas += troca_caracteres(fatias)
+    palavras_geradas += inverte_caracteres(fatias)
+    return palavras_geradas
+'''    
+    A função 'gerador_palavras' usa algoritmos que criam todas as possiveis formas de fatiamento de uma string, passeando
+pelo index de acordo com o 'len'
+    Assim, qualquer palavra que for escrita e for passada como parâmetro da função 'gerador_palavras()', passará pelas
+funções de algoritmo, gerando todas as possiveis correções, limitadas ao algoritmo.
+'''
+
+
+#____________________________FUNÇÕES DO ALGORITMO DE CORREÇÃO____________________________
 
 def insere_letras(fatias):
     novas_palavras = []
@@ -55,22 +76,61 @@ tupla com indice (0,1), dividimos em E(querdo) e D(ireito)
     O retorno dessa função, é uma lista com as possiveis inserções nas possiveis formas de fatiamento
 '''
 
-
-def gerador_palavras(palavra):
-    fatias = []
-    for index in range(len(palavra)+1):
-        fatias.append((palavra[:index], palavra[index:]))
-    palavras_geradas = insere_letras(fatias)
-    return palavras_geradas
+def inverte_caracteres(fatias):
+    novas_palavras = []
+    for E, D in fatias:
+        if len(D) > 1:
+            novas_palavras.append(E + D[1] + D[0] + D[2:])
+    return novas_palavras
 '''
-    A função 'gerador_palavras' usa um algoritmo que cria todas as possiveis formas de fatiamento de uma string, passeando
-pelo index de acordo com o 'len'
-    O retorno é a variavel 'palavras_geradas' que recebe o valore de retorno da função 'insere_letras()' que recebeu como
-parâmetro as fatias geradas dentro do 'for'
-    Assim, qualquer palavra que for escrita e for passada como parâmetro da função 'gerador_palavras()' vai ter como retorno
-todas as possiveis formas de inserção.
+    A função 'inverte_caracteres' recebe como parametro as possiveis formas de fatiamento de uma string, 
+como recebem em forma de tupla com indice (0,1), dividimos em E(querdo) e D(ireito)
+    Dentro de um 'for', percorre-se todas as fatias, trocando a letra de indice[0] pela letra de indice[1], sempre que o tamanho
+do lado D(ireito) seja maior que 1, para que possa ocorrer a troca e o erro 'out_of_range' não ocorrer
+    Dessa forma, a função retorna todas as possiveis inversões
 '''
 
+def deletando_caracteres(fatias):
+    novas_palavras = []
+    for E, D in fatias:
+        novas_palavras.append(E + D[1:])
+    return novas_palavras
+'''  
+    A função 'deletando_caracteres' recebe como parametro as possiveis formas de fatiamento de uma string, 
+como recebem em forma de tupla com indice (0,1), dividimos em E(querdo) e D(ireito)
+    Dentro de um 'for', percorre-se todas as fatias concatenando o lado E(querdo) completo e o D(ireito) fatiado a partir do 
+primeiro caracter, fazendo com que a cada loop, uma palavra é gerada excluindo possiveis caracteres escritos a mais.
+    O retorno dessa função, é uma lista com as possiveis exclusões nas possiveis formas de fatiamento 
+  '''
+
+def troca_caracteres(fatias):
+    novas_palavras = []
+    letras = 'abcdefghijklmnopqrstuvwxyzàáâãèéêìíîòóôõùúûç'
+    for E, D in fatias:
+        for letra in letras:
+            novas_palavras.append(E + letra + D[1:])
+    return novas_palavras
+'''    
+    A função 'troca_caractere' recebe como parametro as possiveis formas de fatiamento de uma string, 
+como recebem em forma de tupla com indice (0,1), dividimos em E(querdo) e D(ireito)
+    Dentro de um 'for', percorre-se todas as fatias concatenando o lado E(querdo) completo e o D(ireito) fatiado a partir do 
+primeiro caracter e adicionando uma letra no lugar da primeira letra do lado direito, que foi deletada
+    Dessa forma fazemos uma troca de todas as formas possiveis e salvamos numa lista.
+O retorno dessa função, é uma lista com as possiveis trocas nas possiveis formas de fatiamento 
+'''
+
+
+#____________________________FUNÇÃO DO CORRETOR____________________________
+frequencia = nltk.FreqDist(lista_palavras)
+def probabilidade(palavra_gerada):
+    total_palavras = len(lista_palavras)
+    return frequencia[palavra_gerada]/total_palavras
+'''
+    Para calcular a frequencia das palavras, usamos uma função da biblioteca nltk, 'nltk.FreqDist, que calcula
+a distribuição de frequencia das palavras, recebe como parametro a lista de palavras do corpusTextual
+    É importante que a variavel 'frequencia' esteja fora da função 'probabilidade', isso diminui o tempo de execução
+do programa enquanto estiver no looping, mas não resolve o tempo de execução do carregamento e tratamento dos dados
+'''
 
 def corretor(palavra):
     palavras_geradas = gerador_palavras(palavra)
@@ -86,19 +146,8 @@ de cada uma das palavras geradas ser a palavra correta
 '''
 
 
-lista_palavras = separa_palavras(artigos)
-frequencia = nltk.FreqDist(lista_palavras)
-def probabilidade(palavra_gerada):
-    total_palavras = len(lista_palavras)
-    return frequencia[palavra_gerada]/total_palavras
-'''
-    Para calcular a frequencia das palavras, usamos uma função da biblioteca nltk, 'nltk.FreqDist, que calcula
-a distribuição de frequencia das palavras, recebe como parametro a lista de palavras do corpusTextual
-    É importante que a variavel 'frequencia' esteja fora da função 'probabilidade', isso diminui o tempo de execução
-do programa enquanto estiver no looping, mas não resolve o tempo de execução do carregamento e tratamento dos dados
-'''
 
-
+#____________________________FUNÇÃO EXCLUSIVA DO PYCHARM PARA TESTAR O CORRETOR____________________________
 while True:
     palavra = input('Palavra: ')
     if corretor == '0':
